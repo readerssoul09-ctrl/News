@@ -26,78 +26,116 @@ st.markdown(
 st.markdown(
     """
     <style>
-    .main {
-        background: #f6f8fb;
+    .stApp {
+        background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
     }
+
     .block-container {
-        padding-top: 1.5rem;
-        padding-bottom: 2rem;
+        padding-top: 1.4rem;
+        max-width: 1280px;
     }
+
     .dashboard-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #101828;
-        margin-bottom: 0.2rem;
+        font-size: 2.45rem;
+        font-weight: 850;
+        color: #111827;
+        letter-spacing: 0;
+        margin-bottom: 0.1rem;
     }
+
     .dashboard-subtitle {
         color: #667085;
         font-size: 1rem;
         margin-bottom: 1rem;
     }
-    .timer-box {
-        background: linear-gradient(135deg, #101828, #344054);
-        color: white;
-        border-radius: 10px;
-        padding: 16px 20px;
-        margin-bottom: 18px;
-        box-shadow: 0 8px 24px rgba(16, 24, 40, 0.14);
-    }
+
     .news-card {
-        background: white;
-        border: 1px solid #e4e7ec;
-        border-radius: 10px;
-        padding: 18px;
-        margin-bottom: 14px;
-        box-shadow: 0 3px 12px rgba(16, 24, 40, 0.06);
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid #e5e7eb;
+        border-left: 5px solid #2563eb;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 26px rgba(15, 23, 42, 0.07);
     }
+
+    .news-card:hover {
+        border-color: #bfdbfe;
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.11);
+        transform: translateY(-1px);
+        transition: all 160ms ease;
+    }
+
     .news-title {
-        color: #101828;
-        font-size: 1.1rem;
-        font-weight: 750;
-        margin: 8px 0;
+        color: #111827;
+        font-size: 1.12rem;
+        font-weight: 800;
+        margin: 10px 0 8px 0;
+        line-height: 1.35;
     }
-    .news-meta {
-        color: #667085;
-        font-size: 0.85rem;
+
+    .news-brief {
+        color: #374151;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        font-style: italic;
+        background: #f8fafc;
+        border-radius: 10px;
+        padding: 10px 14px;
         margin-top: 8px;
     }
+
+    .news-brief div {
+        margin-bottom: 4px;
+    }
+
+    .news-meta {
+        color: #667085;
+        font-size: 0.82rem;
+        margin-top: 10px;
+    }
+
     .badge {
         display: inline-block;
-        padding: 4px 10px;
+        padding: 5px 10px;
         border-radius: 999px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        margin-right: 6px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        margin: 0 6px 6px 0;
     }
+
     .bullish {
-        background: #dcfae6;
-        color: #067647;
+        background: #dcfce7;
+        color: #166534;
     }
+
     .bearish {
-        background: #fee4e2;
-        color: #b42318;
+        background: #fee2e2;
+        color: #991b1b;
     }
+
     .neutral {
-        background: #eef2f6;
-        color: #475467;
+        background: #f1f5f9;
+        color: #475569;
     }
+
     .industry {
-        background: #e0f2fe;
-        color: #026aa2;
+        background: #dbeafe;
+        color: #1d4ed8;
     }
+
     .company {
         background: #fef3c7;
         color: #92400e;
+    }
+
+    .highlight {
+        background: linear-gradient(90deg, #fff7ed, #fffbeb);
+        border: 1px solid #fed7aa;
+        color: #9a3412;
+        padding: 2px 7px;
+        border-radius: 8px;
+        font-weight: 750;
     }
     </style>
     """,
@@ -147,19 +185,44 @@ COUNTRY_QUERIES = {
 def clock_component():
     components.html(
         f"""
+        <style>
+        .timer-box {{
+            background: linear-gradient(135deg, #111827, #334155);
+            color: white;
+            border-radius: 14px;
+            padding: 18px 22px;
+            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.18);
+            font-family: Arial, sans-serif;
+        }}
+        .timer-wrap {{
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }}
+        .timer-label {{
+            font-size: 13px;
+            opacity: 0.78;
+        }}
+        .timer-value {{
+            font-size: 26px;
+            font-weight: 800;
+        }}
+        </style>
+
         <div class="timer-box">
-            <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+            <div class="timer-wrap">
                 <div>
-                    <div style="font-size:13px;opacity:0.78;">Live Clock</div>
-                    <div id="live-clock" style="font-size:26px;font-weight:800;">--:--:--</div>
+                    <div class="timer-label">Live Clock</div>
+                    <div id="live-clock" class="timer-value">--:--:--</div>
                 </div>
                 <div>
-                    <div style="font-size:13px;opacity:0.78;">Auto Refresh Countdown</div>
-                    <div id="countdown" style="font-size:26px;font-weight:800;">05:00</div>
+                    <div class="timer-label">Auto Refresh Countdown</div>
+                    <div id="countdown" class="timer-value">05:00</div>
                 </div>
                 <div>
-                    <div style="font-size:13px;opacity:0.78;">Refresh Cycle</div>
-                    <div style="font-size:26px;font-weight:800;">5 min</div>
+                    <div class="timer-label">Refresh Cycle</div>
+                    <div class="timer-value">5 min</div>
                 </div>
             </div>
         </div>
@@ -174,26 +237,15 @@ def clock_component():
 
         function updateClock() {{
             const now = new Date();
-            const clock = document.getElementById("live-clock");
-            if (clock) {{
-                clock.textContent =
-                    pad(now.getHours()) + ":" +
-                    pad(now.getMinutes()) + ":" +
-                    pad(now.getSeconds());
-            }}
+            document.getElementById("live-clock").textContent =
+                pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
         }}
 
         function updateCountdown() {{
-            const countdown = document.getElementById("countdown");
             const minutes = Math.floor(remaining / 60);
             const seconds = remaining % 60;
-
-            if (countdown) {{
-                countdown.textContent = pad(minutes) + ":" + pad(seconds);
-            }}
-
+            document.getElementById("countdown").textContent = pad(minutes) + ":" + pad(seconds);
             remaining -= 1;
-
             if (remaining < 0) {{
                 remaining = refreshSeconds;
             }}
@@ -205,7 +257,89 @@ def clock_component():
         setInterval(updateCountdown, 1000);
         </script>
         """,
-        height=130
+        height=125
+    )
+
+
+def streaming_metrics_component(total, bullish, bearish, neutral):
+    components.html(
+        f"""
+        <style>
+        .metric-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
+            margin: 8px 0 20px 0;
+            font-family: Arial, sans-serif;
+        }}
+        .metric-card {{
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 18px;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+        }}
+        .metric-label {{
+            color: #667085;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }}
+        .metric-value {{
+            color: #111827;
+            font-size: 2rem;
+            font-weight: 850;
+            margin-top: 4px;
+        }}
+        .metric-note {{
+            color: #667085;
+            font-size: 0.8rem;
+            margin-top: 4px;
+            font-style: italic;
+        }}
+        </style>
+
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Headlines</div>
+                <div class="metric-value" data-target="{total}">0</div>
+                <div class="metric-note">recent Google News items</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Bullish</div>
+                <div class="metric-value" data-target="{bullish}" style="color:#15803d;">0</div>
+                <div class="metric-note">positive market signal</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Bearish</div>
+                <div class="metric-value" data-target="{bearish}" style="color:#b91c1c;">0</div>
+                <div class="metric-note">risk or pressure signal</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Neutral</div>
+                <div class="metric-value" data-target="{neutral}" style="color:#475569;">0</div>
+                <div class="metric-note">watchlist headlines</div>
+            </div>
+        </div>
+
+        <script>
+        const values = document.querySelectorAll(".metric-value");
+        values.forEach((el) => {{
+            const target = Number(el.dataset.target);
+            let current = 0;
+            const step = Math.max(1, Math.ceil(target / 24));
+            const timer = setInterval(() => {{
+                current += step;
+                if (current >= target) {{
+                    current = target;
+                    clearInterval(timer);
+                }}
+                el.textContent = current;
+            }}, 28);
+        }});
+        </script>
+        """,
+        height=160
     )
 
 
@@ -322,12 +456,29 @@ def detect_company(title):
     return "Market / Multiple Companies"
 
 
-def brief_news(row):
-    text = row["summary"] if row["summary"] else row["title"]
-    text = clean_text(text)
-    if len(text) > 240:
-        text = text[:237].rsplit(" ", 1)[0] + "..."
-    return text
+def make_brief_lines(row):
+    summary = clean_text(row["summary"] if row["summary"] else row["title"])
+
+    if len(summary) > 180:
+        summary = summary[:177].rsplit(" ", 1)[0] + "..."
+
+    view = row["view"]
+    company = row["company"]
+    industry = row["industry"]
+
+    if view == "Bullish":
+        market_read = "Market read: The headline carries a positive tone and may support sentiment."
+    elif view == "Bearish":
+        market_read = "Market read: The headline points to pressure, risk, or weaker sentiment."
+    else:
+        market_read = "Market read: The headline is mixed or informational, so it should be watched."
+
+    return [
+        f"What happened: {summary}",
+        market_read,
+        f"Most affected: {company}, with impact mainly linked to {industry}.",
+        "Why it matters: This can influence investor attention, sector movement, and short-term market narrative."
+    ]
 
 
 def enrich_news(df):
@@ -340,7 +491,7 @@ def enrich_news(df):
     df["view"] = df["score"].apply(sentiment_label)
     df["industry"] = combined.apply(detect_industry)
     df["company"] = df["title"].apply(detect_company)
-    df["brief"] = df.apply(brief_news, axis=1)
+    df["brief_lines"] = df.apply(make_brief_lines, axis=1)
     return df
 
 
@@ -373,15 +524,29 @@ def show_news_cards(df):
         return
 
     for _, row in df.iterrows():
+        safe_title = html.escape(str(row["title"]))
+        safe_source = html.escape(str(row["source"]))
+        safe_published = html.escape(str(row["published"]))
+        safe_company = html.escape(str(row["company"]))
+        safe_industry = html.escape(str(row["industry"]))
+        safe_view = html.escape(str(row["view"]))
+
+        brief_html = ""
+        for line in row["brief_lines"]:
+            brief_html += f"<div>{html.escape(line)}</div>"
+
         st.markdown(
             f"""
             <div class="news-card">
-                <span class="badge {badge_class(row['view'])}">{row['view']}</span>
-                <span class="badge company">{row['company']}</span>
-                <span class="badge industry">{row['industry']}</span>
-                <div class="news-title">{row['title']}</div>
-                <div>{row['brief']}</div>
-                <div class="news-meta">Source: {row['source']} | Published: {row['published']}</div>
+                <span class="badge {badge_class(row['view'])}">{safe_view}</span>
+                <span class="badge company">{safe_company}</span>
+                <span class="badge industry">{safe_industry}</span>
+                <div class="news-title">{safe_title}</div>
+                <div class="news-brief">{brief_html}</div>
+                <div class="news-meta">
+                    Source: <span class="highlight">{safe_source}</span>
+                    &nbsp;|&nbsp; Published: {safe_published}
+                </div>
             </div>
             """,
             unsafe_allow_html=True
@@ -436,15 +601,22 @@ def market_news_tab(news_count, region, custom_query):
 
     df = enrich_news(df)
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Bullish", int((df["view"] == "Bullish").sum()) if not df.empty else 0)
-    col2.metric("Bearish", int((df["view"] == "Bearish").sum()) if not df.empty else 0)
-    col3.metric("Neutral", int((df["view"] == "Neutral").sum()) if not df.empty else 0)
+    total = len(df)
+    bullish = int((df["view"] == "Bullish").sum()) if not df.empty else 0
+    bearish = int((df["view"] == "Bearish").sum()) if not df.empty else 0
+    neutral = int((df["view"] == "Neutral").sum()) if not df.empty else 0
 
-    sentiment_filter = st.selectbox("Filter by sentiment", ["All", "Bullish", "Bearish", "Neutral"])
-    industry_options = ["All"] + sorted(df["industry"].dropna().unique().tolist()) if not df.empty else ["All"]
-    industry_filter = st.selectbox("Filter by industry", industry_options)
+    streaming_metrics_component(total, bullish, bearish, neutral)
 
+    col1, col2 = st.columns(2)
+    with col1:
+        sentiment_filter = st.selectbox("Filter by sentiment", ["All", "Bullish", "Bearish", "Neutral"])
+
+    with col2:
+        industry_options = ["All"] + sorted(df["industry"].dropna().unique().tolist()) if not df.empty else ["All"]
+        industry_filter = st.selectbox("Filter by industry", industry_options)
+
+    st.markdown("#### Highlighted Headlines")
     show_news_cards(filter_news(df, sentiment_filter, industry_filter))
 
 
@@ -501,6 +673,12 @@ def ma_news_tab(news_count, region):
     for _, row in df.iterrows():
         full_text = f"{row['title']} {row['summary']}"
         target, acquirer, deal_value = extract_deal_info(full_text)
+        row_copy = row.copy()
+        row_copy["view"] = sentiment_label(sentiment_score(full_text))
+        row_copy["industry"] = detect_industry(full_text)
+        row_copy["company"] = detect_company(row["title"])
+        row_copy["brief_lines"] = make_brief_lines(row_copy)
+
         rows.append({
             "date": row["published_dt"],
             "published": row["published"],
@@ -508,7 +686,7 @@ def ma_news_tab(news_count, region):
             "target": target,
             "acquirer": acquirer,
             "deal_value": deal_value,
-            "brief": brief_news(row),
+            "brief_lines": row_copy["brief_lines"],
             "source": row["source"],
             "link": row["link"],
         })
@@ -516,16 +694,23 @@ def ma_news_tab(news_count, region):
     rows = sorted(rows, key=lambda item: item["date"], reverse=True)
 
     for row in rows:
+        brief_html = ""
+        for line in row["brief_lines"]:
+            brief_html += f"<div>{html.escape(line)}</div>"
+
         st.markdown(
             f"""
             <div class="news-card">
                 <span class="badge industry">M&A</span>
-                <div class="news-title">{row['headline']}</div>
-                <div><b>Target:</b> {row['target']}</div>
-                <div><b>Acquirer:</b> {row['acquirer']}</div>
-                <div><b>Deal value / multiples:</b> {row['deal_value']}</div>
-                <div style="margin-top:8px;">{row['brief']}</div>
-                <div class="news-meta">Source: {row['source']} | Published: {row['published']}</div>
+                <div class="news-title">{html.escape(row['headline'])}</div>
+                <div><b>Target:</b> {html.escape(row['target'])}</div>
+                <div><b>Acquirer:</b> {html.escape(row['acquirer'])}</div>
+                <div><b>Deal value / multiples:</b> {html.escape(row['deal_value'])}</div>
+                <div class="news-brief">{brief_html}</div>
+                <div class="news-meta">
+                    Source: <span class="highlight">{html.escape(row['source'])}</span>
+                    &nbsp;|&nbsp; Published: {html.escape(row['published'])}
+                </div>
             </div>
             """,
             unsafe_allow_html=True
@@ -548,7 +733,7 @@ def macro_news_tab(news_count, region):
 def main():
     st.markdown('<div class="dashboard-title">News Intelligence Dashboard</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="dashboard-subtitle">Recent Google News dashboard with local no-API classification, live clock, and 5-minute auto-refresh.</div>',
+        '<div class="dashboard-subtitle">Recent Google News dashboard with local no-API classification, live clock, streaming metrics, and 5-minute auto-refresh.</div>',
         unsafe_allow_html=True
     )
 
