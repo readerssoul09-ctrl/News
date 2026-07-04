@@ -2,7 +2,7 @@ import html
 import re
 import urllib.parse
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
 import pandas as pd
@@ -12,134 +12,53 @@ import streamlit.components.v1 as components
 
 
 REFRESH_SECONDS = 300
+TWO_YEARS_AGO = (date.today() - timedelta(days=730)).strftime("%Y-%m-%d")
 
-st.set_page_config(
-    page_title="News Intelligence Dashboard",
-    layout="wide"
-)
+st.set_page_config(page_title="News Intelligence Dashboard", layout="wide")
 
-st.markdown(
-    f"<meta http-equiv='refresh' content='{REFRESH_SECONDS}'>",
-    unsafe_allow_html=True
-)
+st.markdown(f"<meta http-equiv='refresh' content='{REFRESH_SECONDS}'>", unsafe_allow_html=True)
 
 st.markdown(
     """
     <style>
-    .stApp {
-        background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
-    }
-
-    .block-container {
-        padding-top: 1.4rem;
-        max-width: 1280px;
-    }
-
-    .dashboard-title {
-        font-size: 2.45rem;
-        font-weight: 850;
-        color: #111827;
-        letter-spacing: 0;
-        margin-bottom: 0.1rem;
-    }
-
-    .dashboard-subtitle {
-        color: #667085;
-        font-size: 1rem;
-        margin-bottom: 1rem;
-    }
-
+    .stApp { background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%); }
+    .block-container { padding-top: 1.4rem; max-width: 1280px; }
+    .dashboard-title { font-size: 2.45rem; font-weight: 850; color: #111827; }
+    .dashboard-subtitle { color: #667085; font-size: 1rem; margin-bottom: 1rem; }
     .news-card {
-        background: rgba(255, 255, 255, 0.96);
-        border: 1px solid #e5e7eb;
-        border-left: 5px solid #2563eb;
-        border-radius: 14px;
-        padding: 18px 20px;
-        margin-bottom: 16px;
-        box-shadow: 0 8px 26px rgba(15, 23, 42, 0.07);
+        background: rgba(255,255,255,0.96); border: 1px solid #e5e7eb;
+        border-left: 5px solid #2563eb; border-radius: 14px;
+        padding: 18px 20px; margin-bottom: 16px;
+        box-shadow: 0 8px 26px rgba(15,23,42,0.07);
     }
-
     .news-card:hover {
-        border-color: #bfdbfe;
-        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.11);
-        transform: translateY(-1px);
-        transition: all 160ms ease;
+        border-color: #bfdbfe; box-shadow: 0 14px 32px rgba(15,23,42,0.11);
+        transform: translateY(-1px); transition: all 160ms ease;
     }
-
-    .news-title {
-        color: #111827;
-        font-size: 1.12rem;
-        font-weight: 800;
-        margin: 10px 0 8px 0;
-        line-height: 1.35;
-    }
-
+    .news-title { color: #111827; font-size: 1.12rem; font-weight: 800; margin: 10px 0 8px; line-height: 1.35; }
     .news-brief {
-        color: #374151;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        font-style: italic;
-        background: #f8fafc;
-        border-radius: 10px;
-        padding: 10px 14px;
-        margin-top: 8px;
+        color: #374151; font-size: 0.95rem; line-height: 1.5; font-style: italic;
+        background: #f8fafc; border-radius: 10px; padding: 10px 14px; margin-top: 8px;
     }
-
-    .news-brief div {
-        margin-bottom: 4px;
-    }
-
-    .news-meta {
-        color: #667085;
-        font-size: 0.82rem;
-        margin-top: 10px;
-    }
-
+    .news-brief div { margin-bottom: 4px; }
+    .news-meta { color: #667085; font-size: 0.82rem; margin-top: 10px; }
     .badge {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 999px;
-        font-size: 0.76rem;
-        font-weight: 800;
-        margin: 0 6px 6px 0;
+        display: inline-block; padding: 5px 10px; border-radius: 999px;
+        font-size: 0.76rem; font-weight: 800; margin: 0 6px 6px 0;
     }
-
-    .bullish {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .bearish {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .neutral {
-        background: #f1f5f9;
-        color: #475569;
-    }
-
-    .industry {
-        background: #dbeafe;
-        color: #1d4ed8;
-    }
-
-    .company {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
+    .bullish { background: #dcfce7; color: #166534; }
+    .bearish { background: #fee2e2; color: #991b1b; }
+    .neutral { background: #f1f5f9; color: #475569; }
+    .industry { background: #dbeafe; color: #1d4ed8; }
+    .company { background: #fef3c7; color: #92400e; }
     .highlight {
         background: linear-gradient(90deg, #fff7ed, #fffbeb);
-        border: 1px solid #fed7aa;
-        color: #9a3412;
-        padding: 2px 7px;
-        border-radius: 8px;
-        font-weight: 750;
+        border: 1px solid #fed7aa; color: #9a3412;
+        padding: 2px 7px; border-radius: 8px; font-weight: 750;
     }
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -181,166 +100,17 @@ COUNTRY_QUERIES = {
     "United Kingdom": "UK economy Bank of England FTSE business markets",
 }
 
-
-def clock_component():
-    components.html(
-        f"""
-        <style>
-        .timer-box {{
-            background: linear-gradient(135deg, #111827, #334155);
-            color: white;
-            border-radius: 14px;
-            padding: 18px 22px;
-            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.18);
-            font-family: Arial, sans-serif;
-        }}
-        .timer-wrap {{
-            display: flex;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-        }}
-        .timer-label {{
-            font-size: 13px;
-            opacity: 0.78;
-        }}
-        .timer-value {{
-            font-size: 26px;
-            font-weight: 800;
-        }}
-        </style>
-
-        <div class="timer-box">
-            <div class="timer-wrap">
-                <div>
-                    <div class="timer-label">Live Clock</div>
-                    <div id="live-clock" class="timer-value">--:--:--</div>
-                </div>
-                <div>
-                    <div class="timer-label">Auto Refresh Countdown</div>
-                    <div id="countdown" class="timer-value">05:00</div>
-                </div>
-                <div>
-                    <div class="timer-label">Refresh Cycle</div>
-                    <div class="timer-value">5 min</div>
-                </div>
-            </div>
-        </div>
-
-        <script>
-        let refreshSeconds = {REFRESH_SECONDS};
-        let remaining = refreshSeconds;
-
-        function pad(value) {{
-            return String(value).padStart(2, "0");
-        }}
-
-        function updateClock() {{
-            const now = new Date();
-            document.getElementById("live-clock").textContent =
-                pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
-        }}
-
-        function updateCountdown() {{
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
-            document.getElementById("countdown").textContent = pad(minutes) + ":" + pad(seconds);
-            remaining -= 1;
-            if (remaining < 0) {{
-                remaining = refreshSeconds;
-            }}
-        }}
-
-        updateClock();
-        updateCountdown();
-        setInterval(updateClock, 1000);
-        setInterval(updateCountdown, 1000);
-        </script>
-        """,
-        height=125
-    )
-
-
-def streaming_metrics_component(total, bullish, bearish, neutral):
-    components.html(
-        f"""
-        <style>
-        .metric-grid {{
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin: 8px 0 20px 0;
-            font-family: Arial, sans-serif;
-        }}
-        .metric-card {{
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 18px;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
-        }}
-        .metric-label {{
-            color: #667085;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }}
-        .metric-value {{
-            color: #111827;
-            font-size: 2rem;
-            font-weight: 850;
-            margin-top: 4px;
-        }}
-        .metric-note {{
-            color: #667085;
-            font-size: 0.8rem;
-            margin-top: 4px;
-            font-style: italic;
-        }}
-        </style>
-
-        <div class="metric-grid">
-            <div class="metric-card">
-                <div class="metric-label">Total Headlines</div>
-                <div class="metric-value" data-target="{total}">0</div>
-                <div class="metric-note">recent Google News items</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Bullish</div>
-                <div class="metric-value" data-target="{bullish}" style="color:#15803d;">0</div>
-                <div class="metric-note">positive market signal</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Bearish</div>
-                <div class="metric-value" data-target="{bearish}" style="color:#b91c1c;">0</div>
-                <div class="metric-note">risk or pressure signal</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Neutral</div>
-                <div class="metric-value" data-target="{neutral}" style="color:#475569;">0</div>
-                <div class="metric-note">watchlist headlines</div>
-            </div>
-        </div>
-
-        <script>
-        const values = document.querySelectorAll(".metric-value");
-        values.forEach((el) => {{
-            const target = Number(el.dataset.target);
-            let current = 0;
-            const step = Math.max(1, Math.ceil(target / 24));
-            const timer = setInterval(() => {{
-                current += step;
-                if (current >= target) {{
-                    current = target;
-                    clearInterval(timer);
-                }}
-                el.textContent = current;
-            }}, 28);
-        }});
-        </script>
-        """,
-        height=160
-    )
+MARKET_TICKERS = {
+    "S&P 500": "^GSPC",
+    "Nasdaq": "^IXIC",
+    "Dow Jones": "^DJI",
+    "Nifty 50": "^NSEI",
+    "Sensex": "^BSESN",
+    "Gold": "GC=F",
+    "Crude Oil": "CL=F",
+    "Bitcoin": "BTC-USD",
+    "USD/INR": "USDINR=X",
+}
 
 
 def clean_text(value):
@@ -350,9 +120,9 @@ def clean_text(value):
     return value.strip()
 
 
-def google_news_url(query, region):
-    recent_query = f"{query} when:1d"
-    encoded = urllib.parse.quote_plus(recent_query)
+def google_news_url(query, region, recent=True):
+    final_query = f"{query} when:1d" if recent else query
+    encoded = urllib.parse.quote_plus(final_query)
     return f"https://news.google.com/rss/search?q={encoded}&hl=en-{region}&gl={region}&ceid={region}:en"
 
 
@@ -367,15 +137,11 @@ def parse_datetime(value):
 
 
 @st.cache_data(ttl=REFRESH_SECONDS, show_spinner=False)
-def fetch_google_news(query, region="IN", limit=15):
-    url = google_news_url(query, region)
+def fetch_google_news(query, region="IN", limit=15, recent=True):
+    url = google_news_url(query, region, recent)
 
     try:
-        response = requests.get(
-            url,
-            timeout=15,
-            headers={"User-Agent": "Mozilla/5.0"}
-        )
+        response = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
         response.raise_for_status()
     except Exception as error:
         return pd.DataFrame(), f"Could not load Google News RSS: {error}"
@@ -404,11 +170,123 @@ def fetch_google_news(query, region="IN", limit=15):
         })
 
     df = pd.DataFrame(rows)
-
     if not df.empty:
         df = df.sort_values("published_dt", ascending=False).head(limit)
 
     return df, None
+
+
+@st.cache_data(ttl=REFRESH_SECONDS, show_spinner=False)
+def fetch_market_metrics():
+    rows = []
+
+    for name, ticker in MARKET_TICKERS.items():
+        encoded = urllib.parse.quote(ticker, safe="")
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{encoded}?range=2d&interval=1d"
+
+        try:
+            response = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            response.raise_for_status()
+            result = response.json()["chart"]["result"][0]
+            meta = result["meta"]
+
+            price = float(meta.get("regularMarketPrice", 0))
+            previous = float(meta.get("chartPreviousClose", 0))
+            change = price - previous if previous else 0
+            change_pct = (change / previous * 100) if previous else 0
+
+            rows.append({
+                "Metric": name,
+                "Ticker": ticker,
+                "Price": round(price, 2),
+                "Change": round(change, 2),
+                "Change %": round(change_pct, 2),
+            })
+        except Exception:
+            rows.append({
+                "Metric": name,
+                "Ticker": ticker,
+                "Price": "N/A",
+                "Change": "N/A",
+                "Change %": "N/A",
+            })
+
+    return pd.DataFrame(rows)
+
+
+def clock_component():
+    components.html(
+        f"""
+        <div style="background:linear-gradient(135deg,#111827,#334155);color:white;border-radius:14px;
+        padding:18px 22px;box-shadow:0 14px 38px rgba(15,23,42,0.18);font-family:Arial;">
+            <div style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                <div><div style="font-size:13px;opacity:.78;">Live Clock</div><div id="live-clock" style="font-size:26px;font-weight:800;">--:--:--</div></div>
+                <div><div style="font-size:13px;opacity:.78;">Auto Refresh Countdown</div><div id="countdown" style="font-size:26px;font-weight:800;">05:00</div></div>
+                <div><div style="font-size:13px;opacity:.78;">Refresh Cycle</div><div style="font-size:26px;font-weight:800;">5 min</div></div>
+            </div>
+        </div>
+        <script>
+        let remaining = {REFRESH_SECONDS};
+        function pad(v) {{ return String(v).padStart(2, "0"); }}
+        function updateClock() {{
+            const now = new Date();
+            document.getElementById("live-clock").textContent = pad(now.getHours()) + ":" + pad(now.getMinutes()) + ":" + pad(now.getSeconds());
+        }}
+        function updateCountdown() {{
+            const m = Math.floor(remaining / 60);
+            const s = remaining % 60;
+            document.getElementById("countdown").textContent = pad(m) + ":" + pad(s);
+            remaining -= 1;
+            if (remaining < 0) remaining = {REFRESH_SECONDS};
+        }}
+        updateClock(); updateCountdown();
+        setInterval(updateClock, 1000); setInterval(updateCountdown, 1000);
+        </script>
+        """,
+        height=125,
+    )
+
+
+def streaming_metrics_component(total, bullish, bearish, neutral):
+    components.html(
+        f"""
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 20px;font-family:Arial;">
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:18px;">
+                <div style="color:#667085;font-size:12px;font-weight:700;text-transform:uppercase;">Total Headlines</div>
+                <div class="metric-value" data-target="{total}" style="font-size:32px;font-weight:850;">0</div>
+                <div style="color:#667085;font-size:13px;font-style:italic;">recent Google News items</div>
+            </div>
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:18px;">
+                <div style="color:#667085;font-size:12px;font-weight:700;text-transform:uppercase;">Bullish</div>
+                <div class="metric-value" data-target="{bullish}" style="font-size:32px;font-weight:850;color:#15803d;">0</div>
+                <div style="color:#667085;font-size:13px;font-style:italic;">positive signal</div>
+            </div>
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:18px;">
+                <div style="color:#667085;font-size:12px;font-weight:700;text-transform:uppercase;">Bearish</div>
+                <div class="metric-value" data-target="{bearish}" style="font-size:32px;font-weight:850;color:#b91c1c;">0</div>
+                <div style="color:#667085;font-size:13px;font-style:italic;">risk signal</div>
+            </div>
+            <div style="background:white;border:1px solid #e5e7eb;border-radius:14px;padding:18px;">
+                <div style="color:#667085;font-size:12px;font-weight:700;text-transform:uppercase;">Neutral</div>
+                <div class="metric-value" data-target="{neutral}" style="font-size:32px;font-weight:850;color:#475569;">0</div>
+                <div style="color:#667085;font-size:13px;font-style:italic;">watchlist items</div>
+            </div>
+        </div>
+        <script>
+        document.querySelectorAll(".metric-value").forEach((el) => {{
+            const target = Number(el.dataset.target);
+            let current = 0;
+            const step = Math.max(1, Math.ceil(target / 24));
+            const timer = setInterval(() => {{
+                current += step;
+                if (current >= target) {{ current = target; clearInterval(timer); }}
+                el.textContent = current;
+            }}, 28);
+        }});
+        </script>
+        """,
+        height=160,
+    )
 
 
 def sentiment_score(text):
@@ -438,15 +316,8 @@ def detect_industry(text):
 
 def detect_company(title):
     headline = re.sub(r"\s+-\s+.*$", "", title)
-    candidates = re.findall(
-        r"\b[A-Z][A-Za-z&.\-]*(?:\s+[A-Z][A-Za-z&.\-]*){0,3}",
-        headline
-    )
-
-    ignored = {
-        "India", "China", "United States", "US", "UK", "EU", "Fed", "RBI",
-        "Market", "Markets", "Stocks", "Shares", "Economy", "Business"
-    }
+    candidates = re.findall(r"\b[A-Z][A-Za-z&.\-]*(?:\s+[A-Z][A-Za-z&.\-]*){0,3}", headline)
+    ignored = {"India", "China", "United States", "US", "UK", "EU", "Fed", "RBI", "Market", "Markets", "Stocks", "Shares", "Economy", "Business"}
 
     for candidate in candidates:
         candidate = candidate.strip()
@@ -458,17 +329,12 @@ def detect_company(title):
 
 def make_brief_lines(row):
     summary = clean_text(row["summary"] if row["summary"] else row["title"])
-
     if len(summary) > 180:
         summary = summary[:177].rsplit(" ", 1)[0] + "..."
 
-    view = row["view"]
-    company = row["company"]
-    industry = row["industry"]
-
-    if view == "Bullish":
+    if row["view"] == "Bullish":
         market_read = "Market read: The headline carries a positive tone and may support sentiment."
-    elif view == "Bearish":
+    elif row["view"] == "Bearish":
         market_read = "Market read: The headline points to pressure, risk, or weaker sentiment."
     else:
         market_read = "Market read: The headline is mixed or informational, so it should be watched."
@@ -476,8 +342,8 @@ def make_brief_lines(row):
     return [
         f"What happened: {summary}",
         market_read,
-        f"Most affected: {company}, with impact mainly linked to {industry}.",
-        "Why it matters: This can influence investor attention, sector movement, and short-term market narrative."
+        f"Most affected: {row['company']}, with impact mainly linked to {row['industry']}.",
+        "Why it matters: This can influence investor attention, sector movement, and short-term market narrative.",
     ]
 
 
@@ -500,10 +366,8 @@ def filter_news(df, sentiment_filter, industry_filter):
         return df
 
     filtered = df.copy()
-
     if sentiment_filter != "All":
         filtered = filtered[filtered["view"] == sentiment_filter]
-
     if industry_filter != "All":
         filtered = filtered[filtered["industry"] == industry_filter]
 
@@ -524,32 +388,23 @@ def show_news_cards(df):
         return
 
     for _, row in df.iterrows():
-        safe_title = html.escape(str(row["title"]))
-        safe_source = html.escape(str(row["source"]))
-        safe_published = html.escape(str(row["published"]))
-        safe_company = html.escape(str(row["company"]))
-        safe_industry = html.escape(str(row["industry"]))
-        safe_view = html.escape(str(row["view"]))
-
-        brief_html = ""
-        for line in row["brief_lines"]:
-            brief_html += f"<div>{html.escape(line)}</div>"
+        brief_html = "".join(f"<div>{html.escape(line)}</div>" for line in row["brief_lines"])
 
         st.markdown(
             f"""
             <div class="news-card">
-                <span class="badge {badge_class(row['view'])}">{safe_view}</span>
-                <span class="badge company">{safe_company}</span>
-                <span class="badge industry">{safe_industry}</span>
-                <div class="news-title">{safe_title}</div>
+                <span class="badge {badge_class(row['view'])}">{html.escape(row['view'])}</span>
+                <span class="badge company">{html.escape(row['company'])}</span>
+                <span class="badge industry">{html.escape(row['industry'])}</span>
+                <div class="news-title">{html.escape(row['title'])}</div>
                 <div class="news-brief">{brief_html}</div>
                 <div class="news-meta">
-                    Source: <span class="highlight">{safe_source}</span>
-                    &nbsp;|&nbsp; Published: {safe_published}
+                    Source: <span class="highlight">{html.escape(row['source'])}</span>
+                    &nbsp;|&nbsp; Published: {html.escape(row['published'])}
                 </div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         if row["link"]:
@@ -558,7 +413,6 @@ def show_news_cards(df):
 
 def extract_deal_info(text):
     text = clean_text(text)
-
     acquirer = "Not clearly mentioned"
     target = "Not clearly mentioned"
 
@@ -587,20 +441,40 @@ def extract_deal_info(text):
     for pattern in value_patterns:
         values.extend(re.findall(pattern, text, flags=re.IGNORECASE))
 
-    deal_value = ", ".join(values) if values else "Not available"
-    return target, acquirer, deal_value
+    return target, acquirer, ", ".join(values) if values else "Not available"
+
+
+def market_metrics_panel():
+    st.markdown("#### Stock Market Metrics")
+    metrics = fetch_market_metrics()
+
+    if metrics.empty:
+        st.warning("Market metrics are temporarily unavailable.")
+        return
+
+    cols = st.columns(3)
+    for index, row in metrics.iterrows():
+        with cols[index % 3]:
+            change = row["Change"]
+            change_pct = row["Change %"]
+            delta = "N/A" if change == "N/A" else f"{change} ({change_pct}%)"
+            st.metric(label=f"{row['Metric']} ({row['Ticker']})", value=row["Price"], delta=delta)
+
+    with st.expander("View all market metrics"):
+        st.dataframe(metrics, use_container_width=True, hide_index=True)
 
 
 def market_news_tab(news_count, region, custom_query):
+    market_metrics_panel()
+
     query = custom_query or "stock market business economy corporate earnings"
-    df, error = fetch_google_news(query, region, news_count)
+    df, error = fetch_google_news(query, region, news_count, recent=True)
 
     if error:
         st.error(error)
         return
 
     df = enrich_news(df)
-
     total = len(df)
     bullish = int((df["view"] == "Bullish").sum()) if not df.empty else 0
     bearish = int((df["view"] == "Bearish").sum()) if not df.empty else 0
@@ -611,7 +485,6 @@ def market_news_tab(news_count, region, custom_query):
     col1, col2 = st.columns(2)
     with col1:
         sentiment_filter = st.selectbox("Filter by sentiment", ["All", "Bullish", "Bearish", "Neutral"])
-
     with col2:
         industry_options = ["All"] + sorted(df["industry"].dropna().unique().tolist()) if not df.empty else ["All"]
         industry_filter = st.selectbox("Filter by industry", industry_options)
@@ -625,7 +498,7 @@ def industry_news_tab(news_count, region):
     industry_news = {}
 
     for industry in INDUSTRIES:
-        df, error = fetch_google_news(f"{industry} industry business news", region, 5)
+        df, error = fetch_google_news(f"{industry} industry business news", region, 5, recent=True)
         if error or df.empty:
             continue
 
@@ -648,7 +521,6 @@ def industry_news_tab(news_count, region):
     with col1:
         st.markdown("### Top 3 Industries")
         st.dataframe(ranking.head(3), use_container_width=True, hide_index=True)
-
     with col2:
         st.markdown("### Bottom 3 Industries")
         st.dataframe(ranking.tail(3).sort_values("Average Score"), use_container_width=True, hide_index=True)
@@ -658,50 +530,80 @@ def industry_news_tab(news_count, region):
 
 
 def ma_news_tab(news_count, region):
-    query = "merger acquisition acquires takeover buyout stake purchase deal value multiple"
-    df, error = fetch_google_news(query, region, news_count)
+    st.markdown(f"#### M&A News From The Past 2 Years")
+    st.caption(f"Coverage filter starts from {TWO_YEARS_AGO}. Results are grouped by industry and shown in chronological order.")
 
-    if error:
-        st.error(error)
-        return
+    industry_deals = {}
+    ranking_rows = []
 
-    if df.empty:
-        st.warning("No M&A news found.")
-        return
+    for industry in INDUSTRIES:
+        query = f'{industry} merger acquisition acquires takeover buyout deal value after:{TWO_YEARS_AGO}'
+        df, error = fetch_google_news(query, region, news_count, recent=False)
 
-    rows = []
-    for _, row in df.iterrows():
-        full_text = f"{row['title']} {row['summary']}"
-        target, acquirer, deal_value = extract_deal_info(full_text)
-        row_copy = row.copy()
-        row_copy["view"] = sentiment_label(sentiment_score(full_text))
-        row_copy["industry"] = detect_industry(full_text)
-        row_copy["company"] = detect_company(row["title"])
-        row_copy["brief_lines"] = make_brief_lines(row_copy)
+        if error or df.empty:
+            continue
 
-        rows.append({
-            "date": row["published_dt"],
-            "published": row["published"],
-            "headline": row["title"],
-            "target": target,
-            "acquirer": acquirer,
-            "deal_value": deal_value,
-            "brief_lines": row_copy["brief_lines"],
-            "source": row["source"],
-            "link": row["link"],
+        enriched = enrich_news(df)
+        deals = []
+
+        for _, row in enriched.iterrows():
+            full_text = f"{row['title']} {row['summary']}"
+            target, acquirer, deal_value = extract_deal_info(full_text)
+
+            deals.append({
+                "date": row["published_dt"],
+                "published": row["published"],
+                "headline": row["title"],
+                "target": target,
+                "acquirer": acquirer,
+                "deal_value": deal_value,
+                "brief_lines": row["brief_lines"],
+                "source": row["source"],
+                "link": row["link"],
+                "industry": industry,
+                "score": row["score"],
+            })
+
+        deals = sorted(deals, key=lambda item: item["date"])
+        industry_deals[industry] = deals
+
+        ranking_rows.append({
+            "Industry": industry,
+            "Deal Headlines": len(deals),
+            "Avg Sentiment Score": round(sum(item["score"] for item in deals) / len(deals), 2) if deals else 0,
+            "Deals With Value Mentioned": sum(1 for item in deals if item["deal_value"] != "Not available"),
         })
 
-    rows = sorted(rows, key=lambda item: item["date"], reverse=True)
+    if not ranking_rows:
+        st.warning("No M&A news found for the selected region.")
+        return
 
-    for row in rows:
-        brief_html = ""
-        for line in row["brief_lines"]:
-            brief_html += f"<div>{html.escape(line)}</div>"
+    ranking = pd.DataFrame(ranking_rows).sort_values(
+        ["Deal Headlines", "Deals With Value Mentioned", "Avg Sentiment Score"],
+        ascending=[False, False, False],
+    )
+
+    st.markdown("### M&A Industry Ranking")
+    st.dataframe(ranking, use_container_width=True, hide_index=True)
+
+    top_industry = ranking.iloc[0]["Industry"]
+    st.success(f"Top M&A industry by headline count: {top_industry}")
+
+    selected_industry = st.selectbox("Select M&A industry", ranking["Industry"].tolist())
+    selected_deals = industry_deals.get(selected_industry, [])
+
+    order = st.radio("Chronological order", ["Oldest first", "Newest first"], horizontal=True)
+    if order == "Newest first":
+        selected_deals = list(reversed(selected_deals))
+
+    for row in selected_deals:
+        brief_html = "".join(f"<div>{html.escape(line)}</div>" for line in row["brief_lines"])
 
         st.markdown(
             f"""
             <div class="news-card">
                 <span class="badge industry">M&A</span>
+                <span class="badge company">{html.escape(row['industry'])}</span>
                 <div class="news-title">{html.escape(row['headline'])}</div>
                 <div><b>Target:</b> {html.escape(row['target'])}</div>
                 <div><b>Acquirer:</b> {html.escape(row['acquirer'])}</div>
@@ -713,7 +615,7 @@ def ma_news_tab(news_count, region):
                 </div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         if row["link"]:
@@ -723,7 +625,7 @@ def ma_news_tab(news_count, region):
 def macro_news_tab(news_count, region):
     for country, query in COUNTRY_QUERIES.items():
         with st.expander(country, expanded=country in ["India", "United States", "China"]):
-            df, error = fetch_google_news(query, region, max(5, news_count // 2))
+            df, error = fetch_google_news(query, region, max(5, news_count // 2), recent=True)
             if error:
                 st.error(error)
                 continue
@@ -733,8 +635,8 @@ def macro_news_tab(news_count, region):
 def main():
     st.markdown('<div class="dashboard-title">News Intelligence Dashboard</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="dashboard-subtitle">Recent Google News dashboard with local no-API classification, live clock, streaming metrics, and 5-minute auto-refresh.</div>',
-        unsafe_allow_html=True
+        '<div class="dashboard-subtitle">Recent market news, stock metrics, M&A tracking, industry ranking, live clock, and 5-minute auto-refresh.</div>',
+        unsafe_allow_html=True,
     )
 
     clock_component()
@@ -766,7 +668,7 @@ def main():
         "Market News",
         "Industry News",
         "M&A News",
-        "Macro News"
+        "Macro News",
     ])
 
     with tab1:
