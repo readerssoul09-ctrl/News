@@ -10,9 +10,18 @@ import requests
 import streamlit as st
 
 
+REFRESH_SECONDS = 300
+
 st.set_page_config(
     page_title="News Intelligence Dashboard",
     layout="wide"
+)
+
+st.markdown(
+    f"""
+    <meta http-equiv="refresh" content="{REFRESH_SECONDS}">
+    """,
+    unsafe_allow_html=True
 )
 
 
@@ -46,12 +55,12 @@ INDUSTRY_KEYWORDS = {
 INDUSTRIES = list(INDUSTRY_KEYWORDS.keys())
 
 COUNTRY_QUERIES = {
-    "India": "India economy RBI Sensex Nifty business markets",
-    "United States": "US economy Federal Reserve S&P 500 Nasdaq business markets",
-    "China": "China economy PBOC yuan business markets",
-    "European Union": "European Union economy ECB eurozone business markets",
-    "Japan": "Japan economy BOJ Nikkei yen business markets",
-    "United Kingdom": "UK economy Bank of England FTSE business markets",
+    "India": "India economy RBI Sensex Nifty business markets when:1d",
+    "United States": "US economy Federal Reserve S&P 500 Nasdaq business markets when:1d",
+    "China": "China economy PBOC yuan business markets when:1d",
+    "European Union": "European Union economy ECB eurozone business markets when:1d",
+    "Japan": "Japan economy BOJ Nikkei yen business markets when:1d",
+    "United Kingdom": "UK economy Bank of England FTSE business markets when:1d",
 }
 
 
@@ -63,6 +72,7 @@ def clean_text(value):
 
 
 def google_news_url(query, region):
+    query = f"{query} when:1d"
     encoded = urllib.parse.quote_plus(query)
     return f"https://news.google.com/rss/search?q={encoded}&hl=en-{region}&gl={region}&ceid={region}:en"
 
@@ -77,8 +87,8 @@ def parse_datetime(value):
         return datetime.now(timezone.utc)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
-def fetch_google_news(query, region="US", limit=15):
+@st.cache_data(ttl=REFRESH_SECONDS, show_spinner=False)
+def fetch_google_news(query, region="IN", limit=15):
     url = google_news_url(query, region)
 
     try:
@@ -114,7 +124,12 @@ def fetch_google_news(query, region="US", limit=15):
             "source": source,
         })
 
-    return pd.DataFrame(rows), None
+    df = pd.DataFrame(rows)
+
+    if not df.empty:
+        df = df.sort_values("published_dt", ascending=False).head(limit)
+
+    return df, None
 
 
 def sentiment_score(text):
@@ -345,7 +360,10 @@ def macro_news_tab(news_count, region):
 
 def main():
     st.title("News Intelligence Dashboard")
-    st.caption("Google News RSS dashboard with local no-API classification.")
+    st.caption("Recent Google News dashboard. Auto-refreshes every 5 minutes.")
+
+    refreshed_at = datetime.now().strftime("%d %b %Y, %I:%M:%S %p")
+    st.info(f"Last refreshed: {refreshed_at}. Next refresh: every 5 minutes.")
 
     with st.sidebar:
         st.header("Controls")
